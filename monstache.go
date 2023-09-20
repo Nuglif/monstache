@@ -37,6 +37,7 @@ import (
 	"github.com/rwynn/monstache/v6/pkg/oplog"
 
 	"github.com/BurntSushi/toml"
+	realaws "github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/defaults"
 	"github.com/coreos/go-systemd/daemon"
@@ -659,10 +660,7 @@ func (config *configOptions) newElasticClient() (client *elastic.Client, err err
 		return client, err
 	}
 	clientOptions = append(clientOptions, elastic.SetHttpClient(httpClient))
-	clientOptions = append(clientOptions,
-		elastic.SetHealthcheckTimeoutStartup(time.Duration(config.ElasticHealth0)*time.Second))
-	clientOptions = append(clientOptions,
-		elastic.SetHealthcheckTimeout(time.Duration(config.ElasticHealth1)*time.Second))
+	clientOptions = append(clientOptions, elastic.SetHealthcheck(false))
 	return elastic.NewClient(clientOptions...)
 }
 
@@ -2978,6 +2976,26 @@ func (config *configOptions) NewHTTPClient() (client *http.Client, err error) {
 			}
 			creds = credentials.NewChainCredentials(providers)
 		}
+
+		sess, err := session.NewSession(&realaws.Config{
+			Region:      realaws.String("us-east-1"),
+			Credentials: creds,
+		})
+		if err != nil {
+			log.Fatalf("failed to create session, %v", err)
+		}
+
+		// Create an STS client
+		stsSvc := sts.New(sess)
+
+		// Get caller identity
+		result, err := stsSvc.GetCallerIdentity(&sts.GetCallerIdentityInput{})
+		if err != nil {
+			log.Fatalf("failed to get caller identity, %v", err)
+		}
+
+		infoLog.Printf("AWS IAM UserID: %s, ARN: %s, Account: %s\n", *result.UserId, *result.Arn, *result.Account)
+
 		config.AWSConnect.creds = creds
 		client = aws.NewV4SigningClientWithHTTPClient(creds, config.AWSConnect.Region, client)
 	}
