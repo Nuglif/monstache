@@ -25,7 +25,7 @@ jobs:
       # Step 1.5: Debug GitHub Tag
       - name: Debug GitHub Tag
         run: |
-          echo "GitHub Tag: ${{ github.event.release.tag_name }}"
+          echo "Image Container Tag: ${{ (github.event_name == 'release' && format('type=raw,value={0}', github.event.release.tag_name)) || (github.event_name == 'workflow_dispatch' && format('type=raw,value={0}', github.ref)) || 'latest' }}"
 
       # Step 2: Generate Docker metadata (tags and labels)
       - name: Docker meta
