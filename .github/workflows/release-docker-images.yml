@@ -32,7 +32,7 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/monstache
           # Define the tagging strategy for Docker images
           tags: |
-            type=raw,value=rel6
+            type=raw,value=${{ github.event.release.tag_name }}
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
