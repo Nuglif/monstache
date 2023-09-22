@@ -22,6 +22,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
+      # Step 1.5: Debug GitHub Tag
+      - name: Debug GitHub Tag
+        run: |
+          echo "GitHub Tag: ${{ github.event.release.tag_name }}"
+
       # Step 2: Generate Docker metadata (tags and labels)
       - name: Docker meta
         id: meta  # Assign an ID for referencing outputs in later steps
@@ -32,7 +37,7 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/monstache
           # Define the tagging strategy for Docker images
           tags: |
-            type=raw,value=${{ github.event.release.tag_name }}
+            type=raw,value=  ${{ (github.event_name == 'release' && format('type=raw,value={0}', github.event.release.tag_name)) || (github.event_name == 'workflow_dispatch' && format('type=raw,value={0}', github.ref)) || 'latest' }}
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
